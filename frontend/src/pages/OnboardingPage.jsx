@@ -158,7 +158,7 @@ const OnboardingPage = () => {
                 name="location"
                 value={formState.location}
                 onChange={(e)=>setFormState({...formState,location:e.target.value})}
-                className='input input-bordered w-full pl=10'
+                className='input input-bordered w-full pl-10'
                 // placeholder="Location"
                 />
               </div>
