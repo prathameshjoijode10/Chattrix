@@ -2,7 +2,7 @@ import { io } from "socket.io-client";
 
 export const getSocketBaseUrl = () => {
   // Match axios dev convention: backend runs on :5001
-  if (import.meta.env.MODE === "development") return "http://localhost:5001";
+  if (import.meta.env.MODE === "development") return "https://chattrix-q8if.onrender.com";
   // In production, use same-origin
   return undefined;
 };
