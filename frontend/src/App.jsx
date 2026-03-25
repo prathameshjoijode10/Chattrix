@@ -6,6 +6,8 @@ import OnboardingPage from './pages/OnboardingPage'
 import NotificationPage from './pages/NotificationPage'
 import CallPage from './pages/CallPage'
 import ChatPage from './pages/ChatPage'
+import GroupCreatePage from './pages/GroupCreatePage'
+import GroupChatPage from './pages/GroupChatPage'
 import { Toaster } from 'react-hot-toast'
 import { Navigate } from 'react-router'
 import PageLoader from './components/PageLoader'
@@ -22,7 +24,7 @@ const App = () => {
   if(isLoading) return <PageLoader/>
 
   return (
-    <div className='h-screen' data-theme={theme}>
+    <div className='h-screen overflow-hidden' data-theme={theme}>
       <Routes>
         <Route path="/" element={isAuthenticated && isOnBoarded?(
          <Layout showSidebar>
@@ -64,12 +66,48 @@ const App = () => {
         
         <Route path="/chat/:id" 
         element={isAuthenticated && isOnBoarded?(
-          <Layout showSidebar={false}>
+          <Layout showSidebar={false} mainScrollable={false}>
             <ChatPage/>
           </Layout>
         ):(
           <Navigate to={!isAuthenticated?"/login":"/onboarding"}/>
         )}/>
+
+        <Route
+          path="/groups"
+          element={
+            isAuthenticated && isOnBoarded ? (
+              <Layout showSidebar={true}>
+                <GroupCreatePage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+            )
+          }
+        />
+
+        <Route
+          path="/groups/:id"
+          element={
+            isAuthenticated && isOnBoarded ? (
+              <Layout showSidebar={false} mainScrollable={false}>
+                <GroupChatPage />
+              </Layout>
+            ) : (
+              <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+            )
+          }
+        />
+        <Route path="/friends" element={
+  isAuthenticated && isOnBoarded ? (
+    <Layout showSidebar={true}>
+      {/* Replace with your FriendsPage component */}
+      <div>Friends Page</div>
+    </Layout>
+  ) : (
+    <Navigate to={!isAuthenticated ? "/login" : "/onboarding"} />
+  )
+} />
       </Routes>
       <Toaster/>
     </div>

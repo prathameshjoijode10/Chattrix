@@ -2,13 +2,30 @@ import React from 'react'
 import { Link } from 'react-router'
 import {LANGUAGE_TO_FLAG} from "../constants"
 const FriendCard = ({friend}) => {
+    const avatarSeed = friend?._id || friend?.email || friend?.fullname || "user";
+    const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(
+        avatarSeed
+    )}&size=64`;
+    const handleAvatarError = (e) => {
+        if (e.currentTarget.dataset.fallbackApplied) return;
+        e.currentTarget.dataset.fallbackApplied = "true";
+        e.currentTarget.src = fallbackAvatar;
+    };
+
   return (
     <div className='card bg-base-200 hover:shadow-md transition-shadow'>
         <div className='card-body p-4'>
             {/* USER INFO  */}
             <div className='flex items-center gap-3 mb-3'>
                 <div className='avatar size-12'>
-                    <img src={friend.profilepic} alt={friend.fullname}/>
+                                        <img
+                                            src={friend.profilepic || fallbackAvatar}
+                                            alt={friend.fullname}
+                                            loading="lazy"
+                                            decoding="async"
+                                            referrerPolicy="no-referrer"
+                                            onError={handleAvatarError}
+                                        />
                 </div>
                 <h3 className='font-semibold truncate'>{friend.fullname}</h3>
             </div>

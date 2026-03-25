@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import "stream-chat-react/dist/css/v2/index.css";
+import "./i18n";
 import './index.css'
 import { BrowserRouter } from 'react-router'
 import App from './App.jsx'

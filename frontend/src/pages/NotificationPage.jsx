@@ -3,9 +3,19 @@ import { BellIcon, ClockIcon, MessageSquareIcon, UserCheckIcon } from 'lucide-re
 import React from 'react'
 import NoNotificationsFound from '../components/NoNotificationFound';
 import { getFriendRequests,acceptFriendRequest } from '../lib/api';
+import { useTranslation } from "react-i18next";
 
 const NotificationPage = () => {
   const queryClient=useQueryClient();
+  const { t } = useTranslation();
+
+  const getFallbackAvatar = (seed) =>
+    `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(seed || "user")}&size=80`;
+  const applyFallbackAvatar = (e, seed) => {
+    if (e.currentTarget.dataset.fallbackApplied) return;
+    e.currentTarget.dataset.fallbackApplied = "true";
+    e.currentTarget.src = getFallbackAvatar(seed);
+  };
 
   const {data:friendRequests,isLoading}=useQuery({
     queryKey:["friendRequests"],
@@ -26,7 +36,7 @@ const NotificationPage = () => {
   return (
     <div className='p-4 sm:p-6 lg:p-8'>
       <div className='container mx-auto max-w-4xl space-y-8'>
-        <h1 className='text-2xl sm:text-3xl font-bold tracking-tight mb-6'>Notifications</h1>
+        <h1 className='text-2xl sm:text-3xl font-bold tracking-tight mb-6'>{t("notifications.title")}</h1>
         {isLoading?(
           <div className='flex justify-center py-12'>
             <span className='laoding loading-spinner loading-lg'></span>
@@ -37,7 +47,7 @@ const NotificationPage = () => {
             <section className='space-y-4'>
               <h2 className='text-xl font-semibold flex items-center gap-2'>
                 <UserCheckIcon className="h-5 w-5 text-primary"/>
-                Friend Requests
+                {t("notifications.friendRequests")}
                 <span className='badge badge-primary ml-2'>{incomingRequests.length}</span>
               </h2>
 
@@ -50,18 +60,30 @@ const NotificationPage = () => {
                       <div className='flex items-center justify-between'>
                         <div className='flex items-center gap-3'>
                         <div className='avatar w-14 h-14 rounded-full bg-base-300'>
-                          <img src={request.sender.profilepic} alt={request.sender.fullname}/>
+                          <img
+                            src={request.sender.profilepic || getFallbackAvatar(request.sender?._id || request.sender?.email || request.sender?.fullname)}
+                            alt={request.sender.fullname}
+                            loading="lazy"
+                            decoding="async"
+                            referrerPolicy="no-referrer"
+                            onError={(e) =>
+                              applyFallbackAvatar(
+                                e,
+                                request.sender?._id || request.sender?.email || request.sender?.fullname
+                              )
+                            }
+                          />
                           </div>
 
                           <div>
                             <h3 className='font-semibold'>{request.sender.fullname}</h3>
                             <div className='flex flex-wrap gap-1.5 mt-1'>
                               <span className='badge badge-secondary badge-sm'>
-                                Native:{request.sender.nativeLanguage}
+                                {t("home.native")}: {request.sender.nativeLanguage}
                               </span>
 
                               <span className='badge badge-outline badge-sm'>
-                                Learning:{request.sender.learningLanguage}
+                                {t("home.learning")}: {request.sender.learningLanguage}
                               </span>
                             </div>
                           </div>
@@ -72,7 +94,7 @@ const NotificationPage = () => {
                       onClick={()=>acceptRequestMutation(request._id)}
                       disabled={isPending}
                       >
-                        Accept
+                        {t("notifications.accept")}
                       </button>
                       </div>
                   </div>
@@ -87,7 +109,7 @@ const NotificationPage = () => {
             <section className='space-y-4'>
               <h2 className='text-xl font-semibold flex items-center gap-2'>
                 <BellIcon className='h-5 w-5 text-success'/>
-                New Connections
+                {t("notifications.newConnections")}
               </h2>
 
               <div className='space-y-3'>
@@ -97,24 +119,34 @@ const NotificationPage = () => {
                       <div className='flex items-start gap-3'>
                         <div className='avatar mt-1 size-10 rounded-full'>
                           <img 
-                          src={notification.recipient.profilepic}
-                          alt={notification.recipient.fullname}/>
+                          src={notification.recipient.profilepic || getFallbackAvatar(notification.recipient?._id || notification.recipient?.email || notification.recipient?.fullname)}
+                          alt={notification.recipient.fullname}
+                          loading="lazy"
+                          decoding="async"
+                          referrerPolicy="no-referrer"
+                          onError={(e) =>
+                            applyFallbackAvatar(
+                              e,
+                              notification.recipient?._id || notification.recipient?.email || notification.recipient?.fullname
+                            )
+                          }
+                          />
                         </div>
 
                         <div className='flex-l'>
                           <h3 className='font-semibold'>{notification.recipient.fullname}</h3>
                           <p className='text-sm my-1'>
-                            {notification.recipient.fullname} accepted your friend request
+                            {notification.recipient.fullname} {t("notifications.acceptedYourRequest")}
                           </p>
                           <p className='text-xs flex items-center opacity-70'>
                             <ClockIcon className='h-3 w-3 mr-1'/>
-                            Recently
+                            {t("notifications.recently")}
                           </p>
                         </div>
 
                         <div className='badge badge-success'>
                           <MessageSquareIcon className='h-3 w-3 mr-1'/>
-                          New Friend
+                          {t("notifications.newFriend")}
                         </div>
                       </div>
                     </div>

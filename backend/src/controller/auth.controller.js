@@ -23,7 +23,8 @@ export async function signup(req,res){
         return res.status(400).json({ message: "Email already exists" });
         }
         const idx=Math.floor(Math.random()*100)+1;
-        const randomAvatar=`https://avatar-placeholder.iran.liara.run/public/${idx}`
+        // Use a widely reachable avatar provider (some hosts may fail DNS in certain networks)
+        const randomAvatar=`https://api.dicebear.com/7.x/avataaars/png?seed=${idx}`
 
         const newUser=await User.create({
             email,
@@ -51,7 +52,7 @@ export async function signup(req,res){
             maxAge:7*24*60*60*1000,
             httpOnly:true,
             sameSite:"strict",
-            secure:process.env.NODE_ENV="production"
+            secure:process.env.NODE_ENV === "production"
         })
         res.status(201).json({success:true,user:newUser})
     }catch(error){
@@ -84,7 +85,7 @@ export async function login(req,res){
             maxAge:7*24*60*60*1000,
             httpOnly:true,
             sameSite:"strict",
-            secure:process.env.NODE_ENV="production"
+            secure:process.env.NODE_ENV === "production"
         })
         res.status(200).json({success:true,user})
    }catch(error){

@@ -9,6 +9,20 @@ if(!apikey || !apisecret){
 }
 
 const streamClient=StreamChat.getInstance(apikey,apisecret)
+export { streamClient };
+
+const BOT_USER = {
+    id: "groq-bot",
+    name: "Bot",
+};
+
+async function ensureBotUser() {
+    try {
+        await streamClient.upsertUsers([BOT_USER]);
+    } catch (error) {
+        console.error("ERROR upserting bot user", error?.message || error);
+    }
+}
 
 export const upsertStreamUser=async function(userData){
     try{
@@ -29,3 +43,26 @@ export const generateStreamToken=(userid)=>{
         console.error("Error generating Stream token:",error);
     }
 };
+
+export async function sendBotMessageToChannel(channelType, channelId, text, extraData = {}) {
+    await ensureBotUser();
+    const channel = streamClient.channel(channelType, channelId);
+    return channel.sendMessage({
+        text,
+        user_id: BOT_USER.id,
+        ...extraData,
+    });
+}
+
+export async function verifyUserInChannel(channelType, channelId, userId) {
+    const channels = await streamClient.queryChannels(
+        {
+            type: channelType,
+            id: { $eq: channelId },
+            members: { $in: [userId] },
+        },
+        [{ last_message_at: -1 }],
+        { limit: 1 }
+    );
+    return channels.length > 0;
+}

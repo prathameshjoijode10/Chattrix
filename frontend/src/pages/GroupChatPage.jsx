@@ -1,45 +1,45 @@
-import React, { useEffect, useState } from 'react'
-import useAuthUser from "../hooks/useAuthUser"
-import { useQuery } from '@tanstack/react-query';
-import {Channel, ChannelHeader,Chat,MessageList,Window, Thread} from "stream-chat-react"
-import {useNavigate, useParams} from "react-router"
-import {StreamChat} from "stream-chat"
-import toast from "react-hot-toast"
+import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Channel, ChannelHeader, Chat, MessageList, Window, Thread } from "stream-chat-react";
+import { useNavigate, useParams } from "react-router";
+import { StreamChat } from "stream-chat";
+import toast from "react-hot-toast";
+
 import ChatLoader from "../components/ChatLoader";
-import CallButton from "../components/CallButton"
-import { getStreamToken } from '../lib/api';
 import MessageInput from "../components/MessageInput";
+import CallButton from "../components/CallButton";
+import useAuthUser from "../hooks/useAuthUser";
+import { getStreamToken } from "../lib/api";
 import CollaborativeTab from "../components/CollaborativeTab";
 import CustomMessage from "../components/CustomMessage";
 
-const STREAM_API_KEY=import.meta.env.VITE_STREAM_API_KEY;
+const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
-const ChatPage = () => {
-
-  const {id:targetUserId}=useParams();
+const GroupChatPage = () => {
+  const { id: groupIdParam } = useParams();
+  const groupId = decodeURIComponent(groupIdParam || "");
   const navigate = useNavigate();
 
-  const [chatClient,setChatClient]=useState(null);
-  const [channel,setChannel]=useState(null)
-  const [loading,setLoading]=useState(true);
-
-  const {authUser}=useAuthUser();
+  const [chatClient, setChatClient] = useState(null);
+  const [channel, setChannel] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const [activeTab, setActiveTab] = useState("chat");
 
-  const {data:tokenData}=useQuery({
-    queryKey:["streamToken"],
-    queryFn:getStreamToken,
-    enabled:!!authUser,
-  })
+  const { authUser } = useAuthUser();
 
-  useEffect(()=>{
-    const initChat=async()=>{
-      if(!tokenData?.token || !authUser) return;
+  const { data: tokenData } = useQuery({
+    queryKey: ["streamToken"],
+    queryFn: getStreamToken,
+    enabled: !!authUser,
+  });
+
+  useEffect(() => {
+    const initGroup = async () => {
+      if (!tokenData?.token || !authUser || !groupId) return;
 
       try {
-        console.log("Initializing stream chat client...");
-        const client=StreamChat.getInstance(STREAM_API_KEY);
+        const client = StreamChat.getInstance(STREAM_API_KEY);
         if (client.userID !== authUser._id) {
           if (client.userID) await client.disconnectUser();
           await client.connectUser(
@@ -52,34 +52,40 @@ const ChatPage = () => {
           );
         }
 
-        const channelId=[authUser._id,targetUserId].sort().join("-");
+        const currChannel = client.channel("messaging", groupId);
 
-        const currChannel=client.channel("messaging",channelId,{
-          members:[authUser._id,targetUserId],
-        })
-
-        await currChannel.watch();
+        try {
+          await currChannel.watch();
+        } catch (e) {
+          // Try joining if membership is required
+          try {
+            await currChannel.addMembers([authUser._id]);
+            await currChannel.watch();
+          } catch (inner) {
+            throw inner;
+          }
+        }
 
         setChatClient(client);
         setChannel(currChannel);
       } catch (error) {
-        console.error("Error initializing chat: ",error);
-        toast.error("Could not connect to chat. Please try again")
-      }finally{
+        console.error("Error initializing group chat:", error);
+        toast.error("Could not open group chat");
+      } finally {
         setLoading(false);
       }
     };
-    initChat();
-  },[tokenData,authUser,targetUserId])
 
-  const handleVideoCall=async()=>{
-    if(!channel) return;
+    initGroup();
+  }, [tokenData, authUser, groupId]);
 
-    const callUrl= `${window.location.origin}/call/${encodeURIComponent(channel.id)}`;
+  const handleVideoCall = async () => {
+    if (!channel) return;
 
+    const callUrl = `${window.location.origin}/call/${encodeURIComponent(channel.id)}`;
     try {
       await channel.sendMessage({
-        text:`I have started a video call. Join me here ${callUrl}`,
+        text: `I have started a video call. Join me here ${callUrl}`,
       });
       toast.success("Video call started");
     } catch (error) {
@@ -88,15 +94,15 @@ const ChatPage = () => {
     }
 
     navigate(`/call/${encodeURIComponent(channel.id)}`);
-  }
+  };
 
-  if(loading || !chatClient || !channel) return <ChatLoader/>;
+  if (loading || !chatClient || !channel) return <ChatLoader />;
 
   return (
-    <div className='h-full min-h-0'>
+    <div className="h-full min-h-0">
       <Chat client={chatClient}>
         <Channel channel={channel} Message={CustomMessage}>
-          <div className='w-full relative'>
+          <div className="w-full relative">
             <Window>
               <div className="h-full min-h-0 flex flex-col">
                 <div className="px-3 py-2 border-b border-base-300 flex items-center justify-end">
@@ -130,7 +136,7 @@ const ChatPage = () => {
                       <div className="flex-1 min-h-0">
                         <MessageList messageActions={["react", "reply", "edit", "delete"]} />
                       </div>
-                        <MessageInput focus enableImageCaptioning={false} />
+                      <MessageInput focus />
                     </div>
                   ) : (
                     <CollaborativeTab className="h-full" roomId={channel.cid} userId={authUser?._id} />
@@ -139,12 +145,11 @@ const ChatPage = () => {
               </div>
             </Window>
           </div>
-          <Thread/>
+          <Thread />
         </Channel>
       </Chat>
-      
     </div>
-  )
-}
+  );
+};
 
-export default ChatPage
+export default GroupChatPage;

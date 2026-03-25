@@ -2,27 +2,93 @@
 @tailwind components;
 @tailwind utilities;
 
-.str-chat__channel {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(to bottom, #c9e8c9, #b7e7bb);
+html,
+body,
+#root {
   height: 100%;
 }
 
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
+.str-chat {
+  height: 100%;
+  min-height: 0;
+}
+
+.str-chat__main-panel {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Stream's <Window /> wrapper in the installed version */
+.str-chat__main-panel-inner {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.str-chat__channel {
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  background: hsl(var(--b2));
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Back-compat: older versions used .str-chat__window */
+.str-chat__window {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Ensure the message list region is the ONLY scroll container */
+.str-chat__message-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.str-chat__thread,
+.str-chat__thread-container {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .str-chat__container {
-  max-width: 1200px;
+  max-width: none;
   width: 100%;
-  height: 80% !important;
-  margin: 0 auto !important;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  height: 100% !important;
+  margin: 0 !important;
+  border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
 }
 
 .str-chat__list {
-  background-color: #ffffff;
+  background-color: hsl(var(--b1));
   padding: 12px;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.str-chat__message-input {
+  flex: 0 0 auto;
 }
 
 .str-chat__list-notifications {
@@ -30,5 +96,5 @@
 }
 
 .str-chat__message-input {
-  border-top: 1px solid #ddd;
+  border-top: 1px solid hsl(var(--b3));
 }

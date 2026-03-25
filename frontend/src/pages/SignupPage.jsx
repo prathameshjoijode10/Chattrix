@@ -5,7 +5,10 @@ import { Link } from 'react-router'
 import { signup } from '../lib/api.js'
 import { useMutation,useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
+import { useTranslation } from "react-i18next";
 const SignupPage = () => {
+
+  const { t } = useTranslation();
 
   const [signupData,setSignupData]=useState({
     fullname:"",
@@ -50,7 +53,7 @@ const navigate = useNavigate();
     {/* ERROR MESSAGE IF ANY */}
     {error &&(
       <div className='alert alert-error mb-4'>
-        <span>{error.response.data.message}</span>
+        <span>{error.response?.data?.message || t("auth.signupFailed")}</span>
       </div>
     )}
 
@@ -58,7 +61,7 @@ const navigate = useNavigate();
       <form onSubmit={handleSignup}>
         <div className='space-y-4'>
           <div>
-            <h2 className='text-xl font-semibold'>Create an Account</h2>
+            <h2 className='text-xl font-semibold'>{t("auth.createAccount")}</h2>
             <p className='text-sm opacity-70'>
               "Click. Chat. Chill." 
             </p>
@@ -68,7 +71,7 @@ const navigate = useNavigate();
             {/*Fullname*/}
             <div className='form-control'>
               <label className='label'>
-                <span className='label-text'>Full name</span>
+                <span className='label-text'>{t("auth.name")}</span>
               </label>
               <input
                 type="text"
@@ -83,7 +86,7 @@ const navigate = useNavigate();
             {/*Email*/}
             <div className='form-control w-full'>
               <label className='label'>
-                <span className='label-text'>Email</span>
+                <span className='label-text'>{t("auth.email")}</span>
               </label>
               <input
                 type="email"
@@ -98,7 +101,7 @@ const navigate = useNavigate();
             {/*Password*/}
             <div className='form-control w-full'>
               <label className='label'>
-                <span className='label-text'>Password</span>
+                <span className='label-text'>{t("auth.password")}</span>
               </label>
               <input
                 type="password"
@@ -129,19 +132,19 @@ const navigate = useNavigate();
             {isPending?(
               <>
               <span className='loading loading-spinner loading-xs'>
-                Loading...
+                {t("auth.creatingAccount")}
               </span>
               </>
             ):(
-              "Create Account"
+              t("auth.createAccount")
             )}
           </button>
 
           <div className='text-center mt-4'>
             <p className='text-sm'>
-              Already have an account?{" "}
+              {t("auth.alreadyHaveAccount")} {" "}
               <Link to="/login" className="text-primary hover:underline">
-              Sign in
+              {t("auth.signIn")}
               </Link>
             </p>
           </div>

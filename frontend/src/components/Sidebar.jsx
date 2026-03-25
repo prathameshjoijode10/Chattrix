@@ -2,11 +2,23 @@ import React from 'react'
 import useAuthUser from '../hooks/useAuthUser'
 import { Link, useLocation } from 'react-router';
 import { HomeIcon, ShipWheelIcon, UsersIcon } from 'lucide-react';
+import { useTranslation } from "react-i18next";
 
 const Sidebar = () => {
     const {authUser}=useAuthUser();
     const location=useLocation();
     const currenPath=location.pathname;
+    const { t } = useTranslation();
+
+        const avatarSeed = authUser?._id || authUser?.email || authUser?.fullname || "user";
+        const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(
+            avatarSeed
+        )}&size=80`;
+        const handleAvatarError = (e) => {
+            if (e.currentTarget.dataset.fallbackApplied) return;
+            e.currentTarget.dataset.fallbackApplied = "true";
+            e.currentTarget.src = fallbackAvatar;
+        };
 
   return (
     <aside className='w-64 bg-base-200 border-r border-base-300 hidden lg:flex flex-col h-screen sticky top-0'>
@@ -27,21 +39,28 @@ const Sidebar = () => {
             }`}
             >
                 <HomeIcon className='size-5 text-base-content opacity-70'/>
-                <span>Home</span>
+                <span>{t("nav.home")}</span>
             </Link>
 
-            <Link to="/friends" className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
+            {/* <Link to="/friends" className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
                 currenPath==="/friends"?"btn-active":""
             }`}>
                 <UsersIcon className='size-5 text-base-content opacity-70'/>
-                <span>Friends</span>
-            </Link>
+                <span>{t("nav.friends")}</span>
+            </Link> */}
 
-            <Link to="/notification" className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
+            {/* <Link to="/notification" className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
                 currenPath==="/notification"?"btn-active":""
             }`}>
                 <UsersIcon className='size-5 text-base-content opacity-70'/>
-                <span>Notification</span>
+                <span>{t("nav.notifications")}</span>
+            </Link> */}
+
+            <Link to="/groups" className={`btn btn-ghost justify-start w-full gap-3 px-3 normal-case ${
+                currenPath?.startsWith("/groups")?"btn-active":""
+            }`}>
+                <UsersIcon className='size-5 text-base-content opacity-70'/>
+                <span>{t("nav.groups")}</span>
             </Link>
         </nav>
 
@@ -50,7 +69,13 @@ const Sidebar = () => {
             <div className='flex items-center gap-3'>
                 <div className='avatar'>
                     <div className='w-10 rounded-full'>
-                        <img src={authUser?.profilepic} alt="User Avatar"/>
+                                                <img
+                                                    src={authUser?.profilepic || fallbackAvatar}
+                                                    alt="User Avatar"
+                                                    decoding="async"
+                                                    referrerPolicy="no-referrer"
+                                                    onError={handleAvatarError}
+                                                />
                     </div>
                 </div>
 
@@ -58,7 +83,7 @@ const Sidebar = () => {
                     <p className='font-semibold text-sm'>{authUser?.fullname}</p>
                     <p className='text-xs text-success flex items-center gap-1 '>
                         <span className='size-2 rounded-full bg-success inline-block'/>
-                        Online
+                        {t("nav.online")}
                     </p>
                 </div>
             </div>

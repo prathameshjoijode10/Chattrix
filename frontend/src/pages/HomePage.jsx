@@ -7,7 +7,10 @@ import {capitialize} from "../lib/utils"
 import { getLanguageFlag } from '../components/FriendCard';
 import FriendCard from '../components/FriendCard';
 import NoFriendsFound from './NoFriendsFound';
+import { useTranslation } from "react-i18next";
 const HomePage = () => {
+
+  const { t } = useTranslation();
 
   const queryClient=useQueryClient();
   const [outgoingRequestIds,setOutgoingRequestIds]=useState(new Set());
@@ -46,10 +49,10 @@ const HomePage = () => {
     <div className='p-4 sm:p-6 lg:p-8'>
       <div className='container mx-auto space-y-10'>
         <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
-          <h2 className='text-2xl sm:text-3xl font-bold tracking-tight'>Your Friends</h2>
+          <h2 className='text-2xl sm:text-3xl font-bold tracking-tight'>{t("home.yourFriends")}</h2>
           <Link to="/notification" className="btn btn-outline btn-sm">
           <UserIcon className="mr-2 size-4"/>
-          Friend Requests
+          {t("home.friendRequests")}
           </Link>
         </div>
 
@@ -71,9 +74,9 @@ const HomePage = () => {
           <div className='mb-6 sm:mb-8'>
             <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
               <div>
-                <h2 className='text-2xl sm:text-3xl font-bold tracking-tight'>Meet new Friends</h2>
+                <h2 className='text-2xl sm:text-3xl font-bold tracking-tight'>{t("home.meetNewFriends")}</h2>
                 <p className='opacity-70'>
-                  Discover perfect friends based on your profile
+                  {t("home.discover")}
                 </p>
               </div>
             </div>
@@ -85,15 +88,24 @@ const HomePage = () => {
             </div>
           ):recommendedUsers.length===0?(
             <div className='card bg-base-200 p-6 text-center'>
-              <h3 className='font-semibold text-lg mb-2'>No recommedations available</h3>
+              <h3 className='font-semibold text-lg mb-2'>{t("home.noRecommendations")}</h3>
               <p className='text-base-content opacity-70'>
-                Check back later for new friends
+                {t("home.checkBackLater")}
               </p>
             </div>
           ):(
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
               {recommendedUsers.map((user)=>{
                 const hasRequestBeensent=outgoingRequestIds.has(user._id);
+                const avatarSeed = user?._id || user?.email || user?.fullname || "user";
+                const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(
+                  avatarSeed
+                )}&size=96`;
+                const handleAvatarError = (e) => {
+                  if (e.currentTarget.dataset.fallbackApplied) return;
+                  e.currentTarget.dataset.fallbackApplied = "true";
+                  e.currentTarget.src = fallbackAvatar;
+                };
 
                 return(
                   <div
@@ -103,7 +115,14 @@ const HomePage = () => {
                     <div className='card-body p-5 space-y-4'>
                       <div className='flex items-center gap-3'>
                         <div className='avatar size-16 rounded-full'>
-                          <img src={user.profilepic} alt={user.fullname}/>
+                          <img
+                            src={user.profilepic || fallbackAvatar}
+                            alt={user.fullname}
+                            loading="lazy"
+                            decoding="async"
+                            referrerPolicy="no-referrer"
+                            onError={handleAvatarError}
+                          />
                         </div>
 
                         <div>
@@ -121,12 +140,12 @@ const HomePage = () => {
                           <div className='flex flex-wrap gap-1.5'>
                             <span className='badge badge-secondary'>
                               {getLanguageFlag(user.nativeLanguage)}
-                              Native: {capitialize(user.nativeLanguage)}
+                              {t("home.native")}: {capitialize(user.nativeLanguage)}
 
                             </span>
                             <span>
                               {getLanguageFlag(user.learningLanguage)}
-                              Learning: {capitialize(user.learningLanguage)}
+                              {t("home.learning")}: {capitialize(user.learningLanguage)}
                             </span>
                           </div>
 
@@ -143,12 +162,12 @@ const HomePage = () => {
                             {hasRequestBeensent?(
                               <>
                               <CheckCircleIcon className="size-4 mr-2"/>
-                              Request Sent
+                              {t("home.requestSent")}
                               </>
                             ):(
                               <>
                               <UserPlusIcon className="size-4 mr-2"/>
-                              Send Friend Request
+                              {t("home.sendFriendRequest")}
                               </>
                             )}
                           </button>

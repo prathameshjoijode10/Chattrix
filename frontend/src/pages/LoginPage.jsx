@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShipWheelIcon } from 'lucide-react';
 import useLogin from '../hooks/useLogin.js';
+import { useTranslation } from "react-i18next";
 
 const LoginPage = () => {
+  const { t } = useTranslation();
   const [loginData, setLoginData] = useState({
     email: '',
     password: '',
@@ -32,7 +34,7 @@ const LoginPage = () => {
           {/* ERROR */}
           {error && (
             <div className='alert alert-error mb-4'>
-              <span>{error.response?.data?.message || 'Login failed.'}</span>
+              <span>{error.response?.data?.message || t("auth.loginFailed")}</span>
             </div>
           )}
 
@@ -40,15 +42,15 @@ const LoginPage = () => {
             <form onSubmit={handleLogin}>
               <div className='space-y-4'>
                 <div>
-                  <h2 className='text-xl font-semibold'>Welcome Back</h2>
-                  <p className='text-sm opacity-70'>Login to your account to continue..</p>
+                  <h2 className='text-xl font-semibold'>{t("auth.welcomeBack")}</h2>
+                  <p className='text-sm opacity-70'>{t("auth.loginContinue")}</p>
                 </div>
 
                 <div className='space-y-3'>
                   {/* Email */}
                   <div className='form-control'>
                     <label className='label'>
-                      <span className='label-text'>Email</span>
+                      <span className='label-text'>{t("auth.email")}</span>
                     </label>
                     <input
                       type='email'
@@ -63,7 +65,7 @@ const LoginPage = () => {
                   {/* Password */}
                   <div className='form-control'>
                     <label className='label'>
-                      <span className='label-text'>Password</span>
+                      <span className='label-text'>{t("auth.password")}</span>
                     </label>
                     <input
                       type='password'
@@ -79,18 +81,18 @@ const LoginPage = () => {
                     {isPending ? (
                       <>
                         <span className='loading loading-spinner loading-xs'></span>
-                        Logging in...
+                        {t("auth.loggingIn")}
                       </>
                     ) : (
-                      'Sign In'
+                      t("auth.signIn")
                     )}
                   </button>
 
                   <div className='text-center mt-4'>
                     <p className='text-sm'>
-                      Don&apos;t have an account?{' '}
+                      {t("auth.dontHaveAccount")} {' '}
                       <Link to='/signup' className='text-primary hover:underline'>
-                        Create One
+                        {t("auth.createOne")}
                       </Link>
                     </p>
                   </div>

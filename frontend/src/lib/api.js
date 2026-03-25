@@ -64,3 +64,31 @@ export async function getStreamToken(){
   const response = await axiosInstance.get("/chat/token");
   return response.data;
 }
+
+export async function postGroqPrompt({ cid, prompt }) {
+  try {
+    const response = await axiosInstance.post("/chat/groq", { cid, prompt });
+    return response.data;
+  } catch (error) {
+    const status = error?.response?.status;
+    if (status === 404) {
+      // Backward compatibility: older backend builds only expose /chat/gemini.
+      const response = await axiosInstance.post("/chat/gemini", { cid, prompt });
+      return response.data;
+    }
+    throw error;
+  }
+}
+
+// Backward-compatible alias
+export const postGeminiPrompt = postGroqPrompt;
+
+export async function captionImageMessage({ messageId }) {
+  const response = await axiosInstance.post("/chat/caption", { messageId });
+  return response.data;
+}
+
+export async function executeCode({ language, source, stdin }) {
+  const response = await axiosInstance.post("/code/execute", { language, source, stdin });
+  return response.data;
+}

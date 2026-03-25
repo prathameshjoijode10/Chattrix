@@ -6,9 +6,21 @@ import toast from "react-hot-toast";
 import { CameraIcon, LoaderIcon, MapPinIcon, ShipWheelIcon, ShuffleIcon } from 'lucide-react';
 import { LANGUAGES } from '../constants/index.js';
 import { completeOnboarding } from '../lib/api.js';
+import { useTranslation } from "react-i18next";
 const OnboardingPage = () => {
    const {authUser}=useAuthUser();
    const queryClient=useQueryClient();
+  const { t } = useTranslation();
+
+  const avatarSeed = authUser?._id || authUser?.email || authUser?.fullname || "user";
+  const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(
+   avatarSeed
+  )}&size=128`;
+  const handleAvatarError = (e) => {
+   if (e.currentTarget.dataset.fallbackApplied) return;
+   e.currentTarget.dataset.fallbackApplied = "true";
+   e.currentTarget.src = fallbackAvatar;
+  };
 
    const [formState,setFormState]=useState({
     fullname:authUser?.fullname || "",
@@ -38,15 +50,16 @@ const OnboardingPage = () => {
 
    const handleRandomAvatar=()=>{
     const idx=Math.floor(Math.random()*100)+1;
-    const randomAvatar=`https://avatar.iran.liara.run/public/${idx}.png`;
+    // Use a widely reachable avatar provider (some hosts may fail DNS in certain networks)
+    const randomAvatar=`https://api.dicebear.com/7.x/avataaars/png?seed=${idx}`;
     setFormState({...formState,profilepic:randomAvatar});
     toast.success("Random profile picture generated");
    }
   return (
-    <div className='min-h-screen bg-base-100 flex items-center justify-center p-4'>
+    <div className='h-screen overflow-y-auto bg-base-100 flex items-center justify-center p-4'>
       <div className='card bg-base-200 w-full max-w-3xl shadow-xl'>
         <div className='card-body p-6 sm:p-8'>
-          <h1 className='text-2xl sm:text-3xl font-bold text-center mb-6'>Complete Your Profile</h1>
+          <h1 className='text-2xl sm:text-3xl font-bold text-center mb-6'>{t("onboarding.title")}</h1>
 
           <form onSubmit={handleSubmit} className='space-y-6'>
             {/* Profile pic container */}
@@ -57,7 +70,10 @@ const OnboardingPage = () => {
                   <img
                   src={formState.profilepic}
                   alt="Profile preview"
-                  className='w-full h-full object-cover'/>
+                  className='w-full h-full object-cover'
+                  referrerPolicy="no-referrer"
+                  onError={handleAvatarError}
+                  />
                 ):(
                   <div className='flex items-center justify-center h-full'>
                     <CameraIcon className='size-12 text-base-content opacity-40'/>
@@ -69,7 +85,7 @@ const OnboardingPage = () => {
                 <div className='flex itmes-center gap-2'>
                   <button type='button' onClick={handleRandomAvatar} className='btn btn-accent'>
                     <ShuffleIcon className='size-4 mr-2'/>
-                    Generate random avatar
+                    {t("onboarding.generateAvatar")}
                   </button>
                 </div>
             </div>
@@ -77,7 +93,7 @@ const OnboardingPage = () => {
             {/* Fill name*/}
             <div className='form-control'>
               <label className='label'>
-                <span className='label-text'>Full Name</span>
+                <span className='label-text'>{t("onboarding.fullName")}</span>
               </label>
               <input
               type="text"
@@ -92,7 +108,7 @@ const OnboardingPage = () => {
             {/*Bio*/}
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Bio</span>
+                <span className="label-text">{t("onboarding.bio")}</span>
               </label>
               <textarea
                 name="bio"
@@ -108,7 +124,7 @@ const OnboardingPage = () => {
               {/* Native language */}
               <div className='form-control'>
                 <label className='label'>
-                  <span className='label-text'>Native language</span>
+                  <span className='label-text'>{t("onboarding.nativeLanguage")}</span>
                 </label>
                 <select
                 name="nativeLanguage"
@@ -116,7 +132,7 @@ const OnboardingPage = () => {
                 onChange={(e)=>setFormState({...formState,nativeLanguage:e.target.value})}
                 className='select select-bordered w-full'
                 >
-                  <option value="">Select your native language</option>
+                  <option value="">{t("onboarding.selectNativeLanguage")}</option>
                   {LANGUAGES.map((lang)=>(
                     <option key={`native-${lang}`} value={lang.toLowerCase()}>
                       {lang}
@@ -128,7 +144,7 @@ const OnboardingPage = () => {
             {/* Learning language */}
               <div className='form-control'>
                 <label className='label'>
-                  <span className='label-text'>Learning language</span>
+                  <span className='label-text'>{t("onboarding.learningLanguage")}</span>
                 </label>
                 <select
                 name="learningLanguage"
@@ -136,7 +152,7 @@ const OnboardingPage = () => {
                 onChange={(e)=>setFormState({...formState,learningLanguage:e.target.value})}
                 className='select select-bordered w-full'
                 >
-                  <option value="">Select your learning language</option>
+                  <option value="">{t("onboarding.selectLearningLanguage")}</option>
                   {LANGUAGES.map((lang)=>(
                     <option key={`native-${lang}`} value={lang.toLowerCase()}>
                       {lang}
@@ -149,7 +165,7 @@ const OnboardingPage = () => {
             {/* Location */}
             <div className='form-control'>
               <label className='label'>
-                <span className='label-text'>Location</span>
+                <span className='label-text'>{t("onboarding.location")}</span>
               </label>
               <div className='relative'>
                 <MapPinIcon className='absolute top-1/2 transform -translate-y-1/2 left-3 size-5 text-base-content opacity-70'/>
@@ -169,12 +185,12 @@ const OnboardingPage = () => {
               {!isPending?(
                 <>
                 <ShipWheelIcon className='size-5 mr-2'/>
-                Complete Onboarding
+                {t("onboarding.complete")}
                 </>
               ):(
                 <>
                 <LoaderIcon className='animate-spin size-5 mr-2'/>
-                Onboarding...</>
+                {t("onboarding.completing")}</>
               )}
             </button>
           </form>
