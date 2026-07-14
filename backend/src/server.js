@@ -17,7 +17,7 @@ const app=express();
 const __dirname=path.resolve();
 
 app.use(cors({
-    origin: process.env.NODE_ENV === "production" ? true : "http://localhost:5173",
+    origin: "https://chattrix-1-c8yz.onrender.com",
     credentials:true,
 }))
 
@@ -32,7 +32,7 @@ const server = http.createServer(app);
 
 const io = new SocketIOServer(server, {
     cors: {
-        origin: process.env.NODE_ENV === "production" ? true : "http://localhost:5173",
+        origin:  "https://chattrix-1-c8yz.onrender.com",
         credentials: true,
     },
 });
