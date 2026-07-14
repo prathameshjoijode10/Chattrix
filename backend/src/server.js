@@ -40,6 +40,7 @@ const io = new SocketIOServer(server, {
 // In-memory collab state (resets on server restart)
 const collabStateByRoom = new Map();
 
+console.log(process.env.JWT_SECRET_KEY);
 const getRoomState = (roomId) => {
     if (!collabStateByRoom.has(roomId)) {
         collabStateByRoom.set(roomId, {

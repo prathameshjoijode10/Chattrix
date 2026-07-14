@@ -1,5 +1,6 @@
 import FriendRequest from '../models/FriendRequest.js'
 import User from "../models/User.js";
+import { streamClient, verifyUserInChannel } from "../lib/stream.js";
 
 export async function getRecommendedUsers(req,res){
     try {
@@ -107,6 +108,151 @@ export async function acceptFriendRequest(req,res){
     }
 }
 
+export async function rejectFriendRequest(req,res){
+    try {
+        const {id:requestId}=req.params;
+        const friendRequest = await FriendRequest.findById(requestId);
+
+        if(!friendRequest){
+            return res.status(404).json({message:"Friend request not found"});
+        }
+
+        if(friendRequest.recipient.toString()!==req.user.id){
+            return res.status(403).json({message:"You are not authorized to reject this request"});
+        }
+
+        friendRequest.status="rejected";
+        await friendRequest.save();
+
+        return res.status(200).json({message:"Friend request rejected"});
+    } catch (error) {
+        console.log("Error in rejectFriendRequest controller",error.message);
+        res.status(500).json({message:"Internal server error"});
+    }
+}
+
+function safeGroupId(groupId) {
+    return typeof groupId === "string" ? groupId.trim() : "";
+}
+
+async function assertGroupMember(groupId, userId) {
+    return verifyUserInChannel("messaging", groupId, userId);
+}
+
+export async function getGroupMembers(req, res) {
+    try {
+        const groupId = safeGroupId(req.params.id);
+        const userId = req.user?.id?.toString();
+
+        if (!groupId) {
+            return res.status(400).json({ message: "Group id is required" });
+        }
+
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        const allowed = await assertGroupMember(groupId, userId);
+        if (!allowed) {
+            return res.status(403).json({ message: "Not a member of this group" });
+        }
+
+        const channel = streamClient.channel("messaging", groupId);
+        const response = await channel.queryMembers({}, { created_at: 1 }, { limit: 100 });
+
+        return res.status(200).json({ members: response.members || [] });
+    } catch (error) {
+        console.error("Error in getGroupMembers controller", error.message);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+export async function addGroupMembers(req, res) {
+    try {
+        const groupId = safeGroupId(req.params.id);
+        const userId = req.user?.id?.toString();
+        const ids = Array.isArray(req.body?.ids)
+            ? req.body.ids.map((id) => (typeof id === "string" ? id.trim() : "")).filter(Boolean)
+            : [];
+
+        if (!groupId) {
+            return res.status(400).json({ message: "Group id is required" });
+        }
+
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        if (ids.length === 0) {
+            return res.status(400).json({ message: "No members to add" });
+        }
+
+        const allowed = await assertGroupMember(groupId, userId);
+        if (!allowed) {
+            return res.status(403).json({ message: "Not a member of this group" });
+        }
+
+        const channel = streamClient.channel("messaging", groupId);
+        console.log("Adding members:", ids);
+
+const result = await channel.addMembers(ids);
+
+console.log(result);
+
+        return res.status(200).json({ message: "Members added" });
+    } catch (error) {
+    console.error("========== ADD MEMBER ERROR ==========");
+    console.error(error);
+    console.error(error.response?.data);
+    console.error("====================================");
+
+    return res.status(500).json({
+        message: error.message,
+        error: error.response?.data || error,
+    });
+}
+}
+
+export async function removeGroupMember(req, res) {
+    try {
+        const groupId = safeGroupId(req.params.id);
+        const memberId = typeof req.params.memberId === "string" ? req.params.memberId.trim() : "";
+        const userId = req.user?.id?.toString();
+
+        if (!groupId || !memberId) {
+            return res.status(400).json({ message: "Group id and member id are required" });
+        }
+
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        const allowed = await assertGroupMember(groupId, userId);
+        if (!allowed) {
+            return res.status(403).json({ message: "Not a member of this group" });
+        }
+
+        const channel = streamClient.channel("messaging", groupId);
+        console.log("Removing:", memberId);
+
+const result = await channel.removeMembers([memberId]);
+
+console.log(result);
+
+        return res.status(200).json({ message: "Member removed" });
+    } catch (error) {
+    console.error("========== REMOVE MEMBER ERROR ==========");
+    console.error(error);
+    console.error(error.response?.data);
+    console.error("====================================");
+
+    return res.status(500).json({
+        message: error.message,
+        error: error.response?.data || error,
+    });
+}
+}
+
 export async function getFriendRequest(req,res){
     try {
         const incomingReqs=await FriendRequest.find({
@@ -117,7 +263,7 @@ export async function getFriendRequest(req,res){
         const acceptedReqs=await FriendRequest.find({
             sender:req.user.id,
             status:"accepted",
-        }).populate("recipient","fullnamr profilepic")
+        }).populate("recipient","fullname profilepic")
         res.status(200).json({incomingReqs,acceptedReqs})
     } catch (error) {
         console.log("Error in getPendingFreindRequest controller",error.message);

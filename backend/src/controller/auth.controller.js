@@ -75,7 +75,7 @@ export async function login(req,res){
     }
 
     const ispassword=await user.matchPassword(password);
-    if(!ispassword) res.status(401).json({message:"Invalid email or password"})
+    if(!ispassword) return res.status(401).json({message:"Invalid email or password"})
 
     const token=jwt.sign({userId:user._id},process.env.JWT_SECRET_KEY,{
     expiresIn:"7d"
@@ -90,7 +90,8 @@ export async function login(req,res){
         res.status(200).json({success:true,user})
    }catch(error){
     console.log("error in login controller",error.message);
-    res.status(500).json({message:"Internal server error"})
+    res.status(500).json({ success: false,
+        message: error.message,})
    }
 }
 

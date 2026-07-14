@@ -3,11 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { StreamChat } from "stream-chat";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router";
-import { Trash2Icon, UserPlus2Icon } from "lucide-react";
+import { EyeIcon, Trash2Icon, UserMinus2Icon, UserPlus2Icon, UsersIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import useAuthUser from "../hooks/useAuthUser";
-import { getStreamToken, getUserFriends } from "../lib/api";
+import { addGroupMembers, getStreamToken, getUserFriends, removeGroupMember } from "../lib/api";
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
@@ -24,7 +24,9 @@ const GroupCreatePage = () => {
   const [loadingGroups, setLoadingGroups] = useState(false);
 
   const [activeManageCid, setActiveManageCid] = useState(null);
-  const [activeManageMemberIds, setActiveManageMemberIds] = useState(() => new Set());
+  const [activeManageMembers, setActiveManageMembers] = useState([]);
+  const [activeViewCid, setActiveViewCid] = useState(null);
+  const [activeViewMembers, setActiveViewMembers] = useState([]);
   const [selectedAddIds, setSelectedAddIds] = useState(() => new Set());
   const [isUpdatingMembers, setIsUpdatingMembers] = useState(false);
 
@@ -80,10 +82,55 @@ const GroupCreatePage = () => {
 
   const closeManageMembers = () => {
     setActiveManageCid(null);
-    setActiveManageMemberIds(new Set());
+    setActiveManageMembers([]);
     setSelectedAddIds(new Set());
   };
 
+  const closeViewMembers = () => {
+    setActiveViewCid(null);
+    setActiveViewMembers([]);
+  };
+
+  const loadMembers = async (ch) => {
+  if (!ch) return [];
+
+  try {
+    await ch.watch();
+
+    const response = await ch.queryMembers(
+      {},
+      { created_at: 1 },
+      { limit: 100 }
+    );
+
+    const members = Array.isArray(response?.members)
+      ? response.members
+      : [];
+
+    console.table(
+      members.map((m) => ({
+        id: m.user?.id,
+        name: m.user?.name,
+        role: m.role,
+        created_at: m.created_at,
+      }))
+    );
+
+    const uniqueMembers = Array.from(
+      new Map(
+        members.map((member) => [
+          member.user?.id || member.user_id || member.id,
+          member,
+        ])
+      ).values()
+    );
+
+    return uniqueMembers;
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
   const toggleAddMember = (friendId) => {
     setSelectedAddIds((prev) => {
       const next = new Set(prev);
@@ -102,13 +149,34 @@ const GroupCreatePage = () => {
       return;
     }
 
+    closeViewMembers();
+
     try {
-      // Ensure we have membership state loaded so we can filter friends properly.
-      await ch.watch();
-      const memberIds = new Set(Object.keys(ch.state?.members || {}));
       setActiveManageCid(ch.cid);
-      setActiveManageMemberIds(memberIds);
+      const members = await loadMembers(ch);
+      setActiveManageMembers(members);
       setSelectedAddIds(new Set());
+    } catch (error) {
+      console.error("Error loading group members", error);
+      toast.error("Could not load group members");
+    }
+  };
+
+  const openViewMembers = async (ch) => {
+    if (!ch) return;
+    if (!authUser || !tokenData?.token) return;
+
+    if (activeViewCid === ch.cid) {
+      closeViewMembers();
+      return;
+    }
+
+    closeManageMembers();
+
+    try {
+      setActiveViewCid(ch.cid);
+      const members = await loadMembers(ch);
+      setActiveViewMembers(members);
     } catch (error) {
       console.error("Error loading group members", error);
       toast.error("Could not load group members");
@@ -125,16 +193,45 @@ const GroupCreatePage = () => {
 
     setIsUpdatingMembers(true);
     try {
-      await ch.addMembers(ids);
-      toast.success("Members added");
-      // Refresh member set locally
-      await ch.watch();
-      setActiveManageMemberIds(new Set(Object.keys(ch.state?.members || {})));
-      setSelectedAddIds(new Set());
-      closeManageMembers();
+      await addGroupMembers(ch.id, ids);
+
+await ch.watch();
+
+const members = await loadMembers(ch);
+
+setActiveManageMembers(members);
+setActiveViewMembers(members);
+
+setSelectedAddIds(new Set());
+
+toast.success("Members added");
     } catch (error) {
       console.error("Error adding members", error);
       toast.error("Could not add members");
+    } finally {
+      setIsUpdatingMembers(false);
+    }
+  };
+
+  const handleRemoveMember = async (ch, memberId) => {
+    if (!ch || !memberId) return;
+    if (!window.confirm("Remove this person from the group?")) return;
+
+    setIsUpdatingMembers(true);
+    try {
+      await removeGroupMember(ch.id, memberId);
+
+await ch.watch();
+
+const members = await loadMembers(ch);
+
+setActiveManageMembers(members);
+setActiveViewMembers(members);
+
+toast.success("Member removed");
+    } catch (error) {
+      console.error("Error removing member", error);
+      toast.error("Could not remove member");
     } finally {
       setIsUpdatingMembers(false);
     }
@@ -154,7 +251,16 @@ const GroupCreatePage = () => {
     }
   };
 
+  const activeManageMemberIds = useMemo(
+    () => new Set(activeManageMembers.map((member) => member?.user?.id || member?.user_id || member?.id).filter(Boolean)),
+    [activeManageMembers]
+  );
+
   const addableFriends = friends.filter((f) => !activeManageMemberIds.has(f._id));
+
+  const getMemberUserId = (member) => member?.user?.id || member?.user_id || member?.id;
+  const getMemberName = (member) => member?.user?.name || member?.user?.fullname || member?.name || "Unknown";
+  const getMemberImage = (member) => member?.user?.image || member?.image || member?.profilepic || null;
 
   const canCreate = useMemo(() => {
     return Boolean(groupName.trim()) && selectedIds.size > 0 && Boolean(tokenData?.token);
@@ -263,6 +369,15 @@ const GroupCreatePage = () => {
                         <UserPlus2Icon className="size-5" />
                       </button>
 
+                      <button
+                        type="button"
+                        className={`btn btn-secondary btn-sm ${activeViewCid === ch.cid ? "btn-active" : ""}`}
+                        onClick={() => openViewMembers(ch)}
+                        aria-label="View members"
+                      >
+                        <EyeIcon className="size-5" />
+                      </button>
+
                       {(ch.data?.created_by?.id === authUser?._id || ch.data?.created_by_id === authUser?._id) && (
                         <button
                           type="button"
@@ -278,7 +393,10 @@ const GroupCreatePage = () => {
                     {activeManageCid === ch.cid && (
                       <div className="border-t border-base-300 p-3 space-y-3">
                         <div className="flex items-center justify-between gap-3">
-                          <h3 className="font-semibold">{t("groups.addMembers")}</h3>
+                          <h3 className="font-semibold flex items-center gap-2">
+                            <UsersIcon className="size-4" />
+                            {t("groups.addMembers")}
+                          </h3>
                           <button className="btn btn-ghost btn-sm" type="button" onClick={closeManageMembers}>
                             {t("groups.close")}
                           </button>
@@ -333,6 +451,70 @@ const GroupCreatePage = () => {
                           >
                             {isUpdatingMembers ? t("groups.adding") : t("groups.addSelected")}
                           </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeViewCid === ch.cid && (
+                      <div className="modal modal-open">
+                        <div className="modal-box max-w-2xl">
+                          <div className="flex items-center justify-between gap-3 mb-4">
+                            <h3 className="text-lg font-semibold flex items-center gap-2">
+                              <UsersIcon className="size-5" />
+                              Existing members
+                            </h3>
+                            <button className="btn btn-ghost btn-sm" type="button" onClick={closeViewMembers}>
+                              Close
+                            </button>
+                          </div>
+
+                          {activeViewMembers.length === 0 ? (
+                            <p className="text-sm opacity-70">No members loaded yet.</p>
+                          ) : (
+                            <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+                              {activeViewMembers.map((member) => {
+                                const memberId = getMemberUserId(member);
+                                const isCurrentUser = memberId === authUser?._id;
+                                const memberName = getMemberName(member);
+                                const memberImage = getMemberImage(member);
+                                return (
+                                  <div key={memberId} className="flex items-center justify-between gap-3 p-3 rounded-lg bg-base-200">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="avatar">
+                                        <div className="w-9 rounded-full">
+                                          <img
+                                            src={memberImage || `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(memberId || memberName)}&size=64`}
+                                            alt={memberName}
+                                            loading="lazy"
+                                            decoding="async"
+                                            referrerPolicy="no-referrer"
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="font-semibold truncate">{memberName}</p>
+                                        <p className="text-xs opacity-60 truncate">{memberId}</p>
+                                      </div>
+                                    </div>
+
+                                    {memberId && (
+                                      <button
+                                        type="button"
+                                        className={`btn btn-sm ${isCurrentUser ? "btn-outline" : "btn-error text-white"}`}
+                                        onClick={() => handleRemoveMember(ch, memberId)}
+                                        disabled={isUpdatingMembers}
+                                        title={isCurrentUser ? "Leave group" : "Remove member"}
+                                      >
+                                        <UserMinus2Icon className="size-4" />
+                                        <span className="hidden sm:inline">{isCurrentUser ? "Leave" : "Remove"}</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
                         </div>
                       </div>
                     )}

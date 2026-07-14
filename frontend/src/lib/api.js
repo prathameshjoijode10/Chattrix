@@ -60,6 +60,26 @@ export async function acceptFriendRequest(requestId) {
   return response.data;
 }
 
+export async function rejectFriendRequest(requestId) {
+  const response = await axiosInstance.put(`/users/friend-request/${requestId}/reject`);
+  return response.data;
+}
+
+export async function getGroupMembers(groupId) {
+  const response = await axiosInstance.get(`/users/groups/${groupId}/members`);
+  return response.data;
+}
+
+export async function addGroupMembers(groupId, ids) {
+  const response = await axiosInstance.post(`/users/groups/${groupId}/members`, { ids });
+  return response.data;
+}
+
+export async function removeGroupMember(groupId, memberId) {
+  const response = await axiosInstance.delete(`/users/groups/${groupId}/members/${memberId}`);
+  return response.data;
+}
+
 export async function getStreamToken(){
   const response = await axiosInstance.get("/chat/token");
   return response.data;

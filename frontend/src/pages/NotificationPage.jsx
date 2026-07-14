@@ -1,8 +1,8 @@
 import { useMutation, useQuery,useQueryClient } from '@tanstack/react-query'
-import { BellIcon, ClockIcon, MessageSquareIcon, UserCheckIcon } from 'lucide-react';
+import { BellIcon, ClockIcon, MessageSquareIcon, UserCheckIcon, XCircleIcon } from 'lucide-react';
 import React from 'react'
 import NoNotificationsFound from '../components/NoNotificationFound';
-import { getFriendRequests,acceptFriendRequest } from '../lib/api';
+import { getFriendRequests,acceptFriendRequest,rejectFriendRequest } from '../lib/api';
 import { useTranslation } from "react-i18next";
 
 const NotificationPage = () => {
@@ -20,6 +20,8 @@ const NotificationPage = () => {
   const {data:friendRequests,isLoading}=useQuery({
     queryKey:["friendRequests"],
     queryFn:getFriendRequests,
+    refetchInterval: 10000,
+    refetchIntervalInBackground: true,
   })
 
   const {mutate:acceptRequestMutation,isPending}=useMutation({
@@ -27,6 +29,13 @@ const NotificationPage = () => {
     onSuccess:()=>{
       queryClient.invalidateQueries({queryKey:["friendRequests"]});
       queryClient.invalidateQueries({queryKey:["friends"]})
+    }
+  })
+
+  const {mutate:rejectRequestMutation,isPending: isRejecting}=useMutation({
+    mutationFn:rejectFriendRequest,
+    onSuccess:()=>{
+      queryClient.invalidateQueries({queryKey:["friendRequests"]});
     }
   })
 
@@ -89,13 +98,24 @@ const NotificationPage = () => {
                           </div>
                       </div>
 
-                      <button
-                      className='btn btn-primary btn-sm'
-                      onClick={()=>acceptRequestMutation(request._id)}
-                      disabled={isPending}
-                      >
-                        {t("notifications.accept")}
-                      </button>
+                      <div className='flex items-center gap-2'>
+                        <button
+                        className='btn btn-ghost btn-sm'
+                        onClick={()=>rejectRequestMutation(request._id)}
+                        disabled={isRejecting || isPending}
+                        >
+                          <XCircleIcon className='size-4 mr-1'/>
+                          Reject
+                        </button>
+
+                        <button
+                        className='btn btn-primary btn-sm'
+                        onClick={()=>acceptRequestMutation(request._id)}
+                        disabled={isPending || isRejecting}
+                        >
+                          {t("notifications.accept")}
+                        </button>
+                      </div>
                       </div>
                   </div>
                   </div>

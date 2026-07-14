@@ -11,6 +11,7 @@ import { getStreamToken } from '../lib/api';
 import MessageInput from "../components/MessageInput";
 import CollaborativeTab from "../components/CollaborativeTab";
 import CustomMessage from "../components/CustomMessage";
+import { HomeIcon } from "lucide-react";
 
 const STREAM_API_KEY=import.meta.env.VITE_STREAM_API_KEY;
 
@@ -72,10 +73,15 @@ const ChatPage = () => {
     initChat();
   },[tokenData,authUser,targetUserId])
 
+  const buildCallUrl = (mode) => {
+    const basePath = `/call/${encodeURIComponent(channel.id)}`;
+    return `${window.location.origin}${basePath}?mode=${mode}`;
+  }
+
   const handleVideoCall=async()=>{
     if(!channel) return;
 
-    const callUrl= `${window.location.origin}/call/${encodeURIComponent(channel.id)}`;
+    const callUrl= buildCallUrl("video");
 
     try {
       await channel.sendMessage({
@@ -87,7 +93,25 @@ const ChatPage = () => {
       toast.error("Could not send call link");
     }
 
-    navigate(`/call/${encodeURIComponent(channel.id)}`);
+    navigate(`/call/${encodeURIComponent(channel.id)}?mode=video`);
+  }
+
+  const handleAudioCall = async () => {
+    if (!channel) return;
+
+    const callUrl = buildCallUrl("audio");
+
+    try {
+      await channel.sendMessage({
+        text: `I have started an audio call. Join me here ${callUrl}`,
+      });
+      toast.success("Audio call started");
+    } catch (error) {
+      console.error("Error sending audio call link message", error);
+      toast.error("Could not send audio call link");
+    }
+
+    navigate(`/call/${encodeURIComponent(channel.id)}?mode=audio`);
   }
 
   if(loading || !chatClient || !channel) return <ChatLoader/>;
@@ -99,8 +123,18 @@ const ChatPage = () => {
           <div className='w-full relative'>
             <Window>
               <div className="h-full min-h-0 flex flex-col">
-                <div className="px-3 py-2 border-b border-base-300 flex items-center justify-end">
-                  <CallButton handleVideoCall={handleVideoCall} />
+                <div className="px-3 py-2 border-b border-base-300 flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => navigate("/")}
+                    aria-label="Return to home screen"
+                    title="Home"
+                  >
+                    <HomeIcon className="size-5" />
+                    <span className="hidden sm:inline">Home</span>
+                  </button>
+                  <CallButton handleVideoCall={handleVideoCall} handleAudioCall={handleAudioCall} />
                 </div>
 
                 <ChannelHeader />

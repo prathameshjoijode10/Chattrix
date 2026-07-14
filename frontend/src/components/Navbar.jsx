@@ -1,15 +1,27 @@
 import React from 'react'
 import useAuthUser from '../hooks/useAuthUser'
 import useLogout from '../hooks/useLogout'
+import { useQuery } from '@tanstack/react-query';
 import { Link,useLocation } from 'react-router';
 import { BellIcon, LogOutIcon, ShipWheelIcon } from 'lucide-react';
 import ThemeSelector from "../components/ThemeSelector.jsx"
 import { useTranslation } from "react-i18next";
+import { getFriendRequests } from '../lib/api';
 const Navbar = () => {
     const {authUser}=useAuthUser();
     const location=useLocation();
     const isChatPage=location.pathname?.startsWith("/chat");
     const { t, i18n } = useTranslation();
+
+    const { data: friendRequests } = useQuery({
+        queryKey: ["friendRequests"],
+        queryFn: getFriendRequests,
+        enabled: !!authUser,
+        refetchInterval: 10000,
+        refetchIntervalInBackground: true,
+    });
+
+    const incomingRequestCount = friendRequests?.incomingReqs?.length || 0;
 
         const avatarSeed = authUser?._id || authUser?.email || authUser?.fullname || "user";
         const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(
@@ -52,10 +64,15 @@ const Navbar = () => {
                             <option value="mr">मराठी</option>
                         </select>
                     </label>
-                    <Link to={"/notification"}>
+                    <Link to={"/notification"} className="relative">
                     <button className='btn btn-ghost btn-circle'>
                         <BellIcon className='h-6 w-6 text-base-content opacity-70'/>
                     </button>
+                    {incomingRequestCount > 0 && (
+                        <span className="badge badge-primary badge-sm absolute top-1 right-1">
+                            {incomingRequestCount}
+                        </span>
+                    )}
                     </Link>
                 </div>
 
