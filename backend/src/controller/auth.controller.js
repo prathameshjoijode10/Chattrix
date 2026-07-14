@@ -81,12 +81,12 @@ export async function login(req,res){
     expiresIn:"7d"
     })
 
-    res.cookie("jwt",token,{
-            maxAge:7*24*60*60*1000,
-            httpOnly:true,
-            sameSite:"strict",
-            secure:process.env.NODE_ENV === "production"
-        })
+    res.cookie("jwt", token, {
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+});
         res.status(200).json({success:true,user})
    }catch(error){
     console.log("error in login controller",error.message);
@@ -96,7 +96,11 @@ export async function login(req,res){
 }
 
 export function logout(req,res){
-    res.clearCookie("jwt")
+    res.clearCookie("jwt", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+});
     res.status(200).json({success:true,message:"Logout successful"})
 }
 
